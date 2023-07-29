@@ -1,2 +1,8 @@
 streamlit
+streamlit_pandas_profiling
+streamlit-shap
+streamlit-tags
 hugchat==0.0.8
+pandas
+scikit-learn
+xgboost
