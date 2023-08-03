@@ -16,10 +16,13 @@ def load_rand_data(shape=(100,5), columns=list('ACDE')):
     df = pd.DataFrame(np.random.randn(*shape), columns=columns)
     return df
 
-openai_key = st.secrets['openai']['api_token']
-hugface_kay = st.secrets['hugface']['api_token']
-hugface_email = st.secrets['hugface']['email']
-hugface_pwd = st.secrets['hugface']['password']
+try:
+    openai_key = st.secrets['openai']['api_token']
+    hugface_kay = st.secrets['hugface']['api_token']
+    hugface_email = st.secrets['hugface']['email']
+    hugface_pwd = st.secrets['hugface']['password']
+except Exception as error:
+    print(error)
 
 @st.cache_data()
 def get_summary(api, model, input_text):
