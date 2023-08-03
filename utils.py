@@ -45,8 +45,11 @@ def get_summary(api, model, input_text):
     else:
         return "No implementation yet available"
     
-def hugface_login():
-    sign = Login(hugface_email, hugface_pwd)
+def hugface_login(hf_email="", hf_password=""):
+    if hf_email == "":
+        sign = Login(hugface_email, hugface_pwd)
+    else:
+        sign = Login(hf_email, hf_password)
     try:
         cookies = sign.login()
         # sign.saveCookies()

@@ -2,14 +2,15 @@ import streamlit as st
 import pandas as pd, numpy as np
 import PyPDF2, openai
 from hugchat import hugchat
+from langchain import document_loaders, embeddings, vectorstores, chains, chat_models
 
 from utils import *
 
-def clear_text():
-    st.session_state.input_text = ""
 
 app_name = 'Text App with LLM'
 st.set_page_config(layout='wide', page_title=app_name)
+st.title(app_name)
+
 if 'input_text' not in st.session_state:
     st.session_state.input_text = ""
 if 'model' not in st.session_state:
@@ -22,13 +23,20 @@ if 'initialised' not in st.session_state:
     st.session_state.initialised = False
 
 # configure application
-st.title(app_name)
 with st.sidebar:
     st.title("LLM Model")
-    st.session_state.task = st.selectbox('Task', ['Chatbot', 'Summary', 'Others'])
+    st.session_state.task = st.selectbox('NLP Task', ['Chatbot', 'Summary', 'About'])
     st.session_state.api = st.selectbox('API', ['HugFace', 'LangChain', 'OpenAI'])
-    st.session_state.model = st.selectbox('Model', ['upstage/Llama-2-70b-instruct', 'stabilityai/StableBeluga2', 'OpenAssistant/oasst-sft-6-llama-30b-xor', 'meta-llama/Llama-2-70b-chat-hf', 'gpt-3.5-turbo'])
+    st.session_state.model = st.selectbox('LLM Model', ['upstage/Llama-2-70b-instruct', 'stabilityai/StableBeluga2', 'OpenAssistant/oasst-sft-6-llama-30b-xor', 'meta-llama/Llama-2-70b-chat-hf', 'gpt-3.5-turbo'])
     st.session_state.temperature = st.slider('Temperature', 0.0, 1.0, 0.8)
+
+    st.subheader("HuggingFace Login")
+    hf_email = st.text_input('Enter E-mail:', type='password')
+    hf_pass = st.text_input('Enter password:', type='password')
+
+
+def clear_text():
+    st.session_state.input_text = ""
 
 def text_summary():
     col1, col2 = st.columns(2)
@@ -74,14 +82,14 @@ def chatbot():
         st.session_state.messages = [{"role": "assistant", "content": "Hi, how may I help you?"}]
 
     # log in to Huggingface and grant authorization to hugchat
-    if st.session_state.api == "HugFace":
+    if st.session_state.api in ("HugFace", "LangChain"):
         if "cookies" not in st.session_state.keys():
-            hugface_login()
+            hugface_login(hf_email, hf_pass)
     elif st.session_state.api == 'OpenAI':
         openai.api_key = openai_key
         
     # create chatbot
-    if st.session_state.api == "HugFace":
+    if st.session_state.api in ("HugFace", "LangChain"):
         if "chatbot" not in st.session_state.keys():
             hugface_create_chatbot()
         st.session_state.initialised = True
@@ -107,6 +115,10 @@ def chatbot():
                     completion = openai.ChatCompletion.create(model=st.session_state.model, \
                                                             messages=st.session_state.messages)
                     response = completion.get("choices")[0].get('message').get('content')
+                elif st.session_state.api == 'LangChain':
+                    st.session_state.chatbot.active_model = st.session_state.model
+                    chain = chains.ConversationChain(llm=st.session_state.chatbot)
+                    response = chain.run(input=prompt)
 
                 st.write(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -120,6 +132,6 @@ elif st.session_state.task == "Summary":
     st.header("LLM-powered text summary")
     text_summary()
 else:
-    st.header("Other tasks by LLM model")
-    st.write("to be implemented")
+    st.header("About TextApp powered by LLM model")
+    st.markdown(open("README.md", 'r').read())
 
