@@ -3,7 +3,7 @@
 This is an LLM-powered app built using LLM such as HugChat, ChatGPT, LangChain, and Streamlit.
 ```
 
-A number of popular LLM models are available including the the [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model that is used by [HugChat](https://github.com/Soulter/hugging-chat-api), as well as the gpt-3.5-turbo by OpenAI.
+A number of popular LLM models are available including the the [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model that is used by [HugChat](https://github.com/Soulter/hugging-chat-api), as well as the OpenAI LLM gpt-3.5-turbo.
 
 ## Demo App
 

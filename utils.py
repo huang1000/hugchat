@@ -3,6 +3,7 @@ import streamlit as st
 import openai
 from hugchat import hugchat
 from hugchat.login import Login
+import os
 
 def style_number(v, props=''):
     try:
@@ -18,7 +19,9 @@ def load_rand_data(shape=(100,5), columns=list('ACDE')):
 
 try:
     openai_key = st.secrets['openai']['api_token']
-    hugface_kay = st.secrets['hugface']['api_token']
+    hugface_key = st.secrets['hugface']['api_token']
+    os.environ['OPENAI_API_KEY'] = openai_key
+    os.environ['HUGGINGFACEHUB_API_TOKEN'] = hugface_key
     hugface_email = st.secrets['hugface']['email']
     hugface_pwd = st.secrets['hugface']['password']
 except Exception as error:

@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd, numpy as np
 import PyPDF2, openai
 from hugchat import hugchat
-from langchain import document_loaders, embeddings, vectorstores, chains, chat_models
+from langchain import document_loaders, embeddings, vectorstores, chains, chat_models, llms, PromptTemplate, HuggingFaceHub
+from langchain.chains import LLMChain, ConversationChain
+from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 
 from utils import *
 
@@ -24,11 +26,11 @@ if 'initialised' not in st.session_state:
 
 # configure application
 with st.sidebar:
-    st.title("LLM Model")
-    st.session_state.task = st.selectbox('NLP Task', ['Chatbot', 'Summary', 'About'])
+    st.title("LLM Config")
+    st.session_state.task = st.selectbox('NLP Task', ['Chatbot', 'Summary', 'QA', 'Agent', 'About'])
     st.session_state.api = st.selectbox('API', ['HugFace', 'LangChain', 'OpenAI'])
-    st.session_state.model = st.selectbox('LLM Model', ['upstage/Llama-2-70b-instruct', 'stabilityai/StableBeluga2', 'OpenAssistant/oasst-sft-6-llama-30b-xor', 'meta-llama/Llama-2-70b-chat-hf', 'gpt-3.5-turbo'])
-    st.session_state.temperature = st.slider('Temperature', 0.0, 1.0, 0.8)
+    st.session_state.model = st.selectbox('LLM Model', ['upstage/Llama-2-70b-instruct-v2', 'stabilityai/StableBeluga-7B', 'google/flan-t5-xl', 'OpenAssistant/oasst-sft-6-llama-30b-xor', 'meta-llama/Llama-2-7b-chat-hf', 'openlm-research/open_llama_3b_v2', 'MBZUAI/LaMini-Neo-1.3B', 'gpt2-medium', 'TurkuNLP/gpt3-finnish-small', 'gpt-3.5-turbo'])
+    st.session_state.temperature = st.slider('Temperature :fire:', 0.0, 1.0, 0.8)
 
     st.subheader("HuggingFace Login")
     hf_email = st.text_input('Enter E-mail:', type='password')
@@ -37,6 +39,13 @@ with st.sidebar:
 
 def clear_text():
     st.session_state.input_text = ""
+
+def reset_chatbot():
+    # clear chatbot and messages
+    if 'messages' in st.session_state.keys():
+        st.session_state.pop('messages')
+    if 'chatbot' in st.session_state.keys():
+        st.session_state.pop('chatbot')
 
 def text_summary():
     col1, col2 = st.columns(2)
@@ -88,13 +97,19 @@ def chatbot():
     elif st.session_state.api == 'OpenAI':
         openai.api_key = openai_key
         
-    # create chatbot
-    if st.session_state.api in ("HugFace", "LangChain"):
+    # create chatbot model
+    if st.session_state.api == "HugFace":
         if "chatbot" not in st.session_state.keys():
             hugface_create_chatbot()
-        st.session_state.initialised = True
+    elif st.session_state.api == 'LangChain':
+        if "chatbot" not in st.session_state.keys():
+            llm = HuggingFaceHub(repo_id=st.session_state.model, model_kwargs={'temperature': st.session_state.temperature})
+            st.session_state.chatbot = ConversationChain(llm=llm, memory=ConversationBufferWindowMemory(k=8))
     elif st.session_state.api == "OpenAI":
-        st.session_state.initialised = True
+        if "chatbot" not in st.session_state.keys():
+            st.session_state.chatbot = llms.OpenAI(model_name='gpt-3.5-turbo', temperature=st.session_state.temperature)
+            #st.session_state.chatbot = chat_models.ChatOpenAI(model='gpt-3.5-turbo', temperature=st.session_state.temperature)
+    st.session_state.initialised = True
     
     # Display chat messages
     display_msg()
@@ -107,7 +122,7 @@ def chatbot():
 
         # generate response
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
+            with st.spinner("Thinking... :thinking_face:"):
                 if st.session_state.api == 'HugFace':
                     st.session_state.chatbot.active_model = st.session_state.model
                     response = st.session_state.chatbot.chat(prompt, temperature=st.session_state.temperature)
@@ -116,9 +131,7 @@ def chatbot():
                                                             messages=st.session_state.messages)
                     response = completion.get("choices")[0].get('message').get('content')
                 elif st.session_state.api == 'LangChain':
-                    st.session_state.chatbot.active_model = st.session_state.model
-                    chain = chains.ConversationChain(llm=st.session_state.chatbot)
-                    response = chain.run(input=prompt)
+                    response = st.session_state.chatbot.run(prompt)
 
                 st.write(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -126,11 +139,18 @@ def chatbot():
 # tab1, tab2, tab3 = st.tabs(["Chatbot", "Summarize", "Others"])
 
 if st.session_state.task == "Chatbot":
-    st.header("LLM-powered Chatbot")
+    st.header("LLM-powered Chatbot :robot_face:")
+    st.button("Restart :robot_face:", on_click=reset_chatbot())
     chatbot()
 elif st.session_state.task == "Summary":
     st.header("LLM-powered text summary")
     text_summary()
+elif st.session_state.task == "QA":
+    st.header("LLM-powered QA over specific documents")
+    st.write("To be available")
+elif st.session_state.task == "Agent":
+    st.header("LLM-powered Agent")
+    st.write("To be available soon")
 else:
     st.header("About TextApp powered by LLM model")
     st.markdown(open("README.md", 'r').read())
